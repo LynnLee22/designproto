@@ -1,0 +1,10 @@
+{
+  "description": "성인의 2025년 비독서 지속 기간을 인구집단별로 시각화하고 비교하는 대시보드로, 독서 현황과 집단 간 차이를 빠르게 파악할 수 있습니다.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
