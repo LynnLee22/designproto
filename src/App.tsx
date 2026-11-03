@@ -1,149 +1,393 @@
-import { useMemo, useState } from 'react'
+import { useState } from "react"
 
-const BANDS = ['3년 이하', '4~6년', '7~10년', '11~15년', '16~20년', '21~30년', '31년 이상']
-const DATA = [
-  {category:'전체',group:'전체',n:3074,bands:[23.9,18.9,21.1,10.9,9.2,8.9,7],avg:12},
-  {category:'성별',group:'남성',n:1616,bands:[25.4,20.3,21.2,10.3,9.7,7.3,5.7],avg:11.1},
-  {category:'성별',group:'여성',n:1458,bands:[22.3,17.4,21,11.5,8.7,10.7,8.5],avg:13},
-  {category:'연령별',group:'20대 이하',n:183,bands:[70.9,23,6.1,0,0,0,0],avg:3},
-  {category:'연령별',group:'30대',n:262,bands:[42.1,27.3,27,3.6,0,0,0],avg:5.2},
-  {category:'연령별',group:'40대',n:510,bands:[32.3,19.1,23.3,15.3,8.5,1.4,0],avg:7.9},
-  {category:'연령별',group:'50대',n:710,bands:[22.1,23.1,18.9,9.6,10.8,13.8,1.7],avg:11.1},
-  {category:'연령별',group:'60대',n:726,bands:[14.6,17.9,24.7,11.8,9.4,8.5,13],avg:14.2},
-  {category:'연령별',group:'70대 이상',n:683,bands:[10,11.1,19.9,13.5,13.9,15.6,16],avg:18.7},
-  {category:'학력별',group:'중졸 이하',n:472,bands:[4.5,8.1,19,11,19,17.6,20.8],avg:21.5},
-  {category:'학력별',group:'고졸 고퇴',n:1571,bands:[19,20,22.4,12.7,8,10.7,7.2],avg:12.5},
-  {category:'학력별',group:'대재 이상',n:1031,bands:[40.4,22.1,20.3,8,6.6,2.1,.4],avg:6.9},
-  {category:'월평균가구소득',group:'200만원 미만',n:252,bands:[4.1,10.5,22,13.8,20.4,16.5,12.8],avg:19.2},
-  {category:'월평균가구소득',group:'200~300만원 미만',n:532,bands:[16.1,18.2,24.1,7.6,11.6,10,12.5],avg:14.9},
-  {category:'월평균가구소득',group:'300~400만원 미만',n:766,bands:[24.8,17.6,21.3,12.9,5.2,11,7.1],avg:12},
-  {category:'월평균가구소득',group:'400~500만원 미만',n:762,bands:[35.5,18.5,15.4,11,8.3,7.2,4.1],avg:9.9},
-  {category:'월평균가구소득',group:'500만원 이상',n:762,bands:[23.5,23.9,24.4,10.1,8.8,5.2,4.3],avg:9.8}
-]
-type Row = typeof DATA[number]
-const categories = ['성별','연령별','학력별','월평균가구소득']
-const palettes: Record<string,string[]> = {
-  성별:['#9d3855','#d28745'],
-  연령별:['#ead1d5','#dcaeb7','#ca8393','#b75e73','#9d3855','#7c203d'],
-  학력별:['#e7c7cd','#c77586','#91304d'],
-  월평균가구소득:['#ecd4d8','#dda9b3','#ca7d8d','#ae4d65','#852743']
-}
-const overall=DATA[0]
-const fmt=(n:number)=>n.toLocaleString('ko-KR')
+type IconName = "dashboard" | "chart" | "sensor" | "settings"
 
-function Icon({name}:{name:'book'|'users'|'up'|'down'|'search'|'close'}) {
-  const p:Record<string,React.ReactNode>={
-    book:<><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v16H7.5A3.5 3.5 0 0 0 4 21.5z"/><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H13v16h3.5a3.5 3.5 0 0 1 3.5 3.5z"/></>,
-    users:<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
-    up:<><path d="m18 15-6-6-6 6"/></>, down:<><path d="m6 9 6 6 6-6"/></>,
-    search:<><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
-    close:<><path d="m6 6 12 12M18 6 6 18"/></>
+function Icon({
+  name,
+  className = "h-5 w-5",
+}: {
+  name: IconName
+  className?: string
+}) {
+  const paths: Record<IconName, React.ReactNode> = {
+    dashboard: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M4 19V5" />
+        <path d="M4 19h16" />
+        <path d="m7 15 4-4 3 2 5-6" />
+      </>
+    ),
+    sensor: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M5.64 18.36a9 9 0 0 1 0-12.72M18.36 5.64a9 9 0 0 1 0 12.72M8.46 15.54a5 5 0 0 1 0-7.08M15.54 8.46a5 5 0 0 1 0 7.08" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.82 2.82-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.82-2.82.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.52-1.04H3v-4h.08A1.7 1.7 0 0 0 4.6 8.92a1.7 1.7 0 0 0-.34-1.88L4.2 6.98l2.82-2.82.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.04V3h4v.04a1.7 1.7 0 0 0 1.04 1.52 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.82 2.82-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.52 1.04H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
+      </>
+    ),
   }
-  return <svg viewBox="0 0 24 24" aria-hidden="true">{p[name]}</svg>
-}
 
-function LineChart({rows,normalized=false}:{rows:Row[],normalized?:boolean}) {
-  const [tip,setTip]=useState<{x:number,y:number,row:Row,i:number,v:number}|null>(null)
-  const W=760,H=310,L=48,R=16,T=18,B=48
-  const max=normalized?1:80
-  const values=useMemo(()=>{
-    if(!normalized) return rows.map(r=>r.bands)
-    return rows.map((r)=>r.bands.map((v,i)=>{
-      const col=rows.map(x=>x.bands[i]), lo=Math.min(...col), hi=Math.max(...col)
-      return hi===lo?0:(v-lo)/(hi-lo)
-    }))
-  },[rows,normalized])
-  const x=(i:number)=>L+i*(W-L-R)/6, y=(v:number)=>T+(max-v)*(H-T-B)/max
-  return <div className="chart-wrap">
-    <svg className="line-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={normalized?'정규화 비독서 기간 분포':'비독서 기간 비율 분포'}>
-      {[0,.25,.5,.75,1].map((f,i)=><g key={f}><line x1={L} x2={W-R} y1={y(max*f)} y2={y(max*f)} className="grid"/><text x={L-10} y={y(max*f)+4} textAnchor="end">{normalized?(max*f).toFixed(i===0?0:2):max*f}</text></g>)}
-      <text x="12" y="12" className="axis-title">{normalized?'정규화 값':'비율 (%)'}</text>
-      {BANDS.map((b,i)=><text key={b} x={x(i)} y={H-15} textAnchor="middle">{b}</text>)}
-      {rows.map((r,ri)=>{
-        const isOverall=r.category==='전체'
-        const catRows=DATA.filter(d=>d.category===r.category), color=isOverall?'#98928b':palettes[r.category]?.[catRows.indexOf(r)]||'#9d3855'
-        const pts=values[ri].map((v,i)=>`${x(i)},${y(v)}`).join(' ')
-        return <g key={r.group}><polyline points={pts} fill="none" stroke={color} strokeWidth={isOverall?2:2.6} strokeDasharray={isOverall?'6 6':''}/>
-          {values[ri].map((v,i)=><circle key={i} cx={x(i)} cy={y(v)} r="4" fill={color} onMouseEnter={()=>setTip({x:x(i),y:y(v),row:r,i,v})} onMouseLeave={()=>setTip(null)}/>)}
-        </g>
-      })}
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
     </svg>
-    <div className="legend">{rows.map(r=><span key={r.group}><i style={{background:r.category==='전체'?'#98928b':palettes[r.category]?.[DATA.filter(d=>d.category===r.category).indexOf(r)]}}/> {r.group}</span>)}</div>
-    {tip&&<div className="tooltip" style={{left:`${tip.x/W*100}%`,top:`${tip.y/H*100}%`}}><b>{tip.row.group}</b><span>{BANDS[tip.i]} · {normalized?tip.v.toFixed(2):`${tip.v}%`}</span><small>사례수 {fmt(tip.row.n)}명</small></div>}
-  </div>
+  )
 }
 
-function Ranking({metric,category}:{metric:string,category:string}) {
-  const ix=BANDS.indexOf(metric), unit=metric==='avg'?'년':'%', base=metric==='avg'?overall.avg:overall.bands[ix]
-  const rows=DATA.slice(1).filter(r=>category==='전체'||r.category===category).sort((a,b)=>(metric==='avg'?b.avg:b.bands[ix])-(metric==='avg'?a.avg:a.bands[ix]))
-  const vals=rows.map(r=>metric==='avg'?r.avg:r.bands[ix]), max=Math.max(...vals,base)*1.12
-  return <div className="bars" style={{'--base':`${base/max*100}%`} as React.CSSProperties}>
-    <div className="base-line"><span>전체 {base}{unit}</span></div>
-    {rows.map((r,i)=>{const v=metric==='avg'?r.avg:r.bands[ix];return <div className="bar-row" key={r.group}><span className="rank">{i+1}</span><span className="bar-label">{r.group}<small>{r.category}</small></span><div className="track"><div className="fill" style={{width:`${v/max*100}%`}}/><b>{v}{unit}</b></div></div>})}
-  </div>
+const pitchData = [
+  5, 7, 4, 9, 12, 10, 15, 14, 18, 16, 21, 19, 24, 22, 18, 20, 17, 15, 19, 16,
+  13, 14, 12, 10,
+]
+const rollData = [
+  -5, -2, -4, 1, -1, 3, 0, 4, 2, 5, 3, 7, 4, 6, 2, 0, 3, -2, 1, -3, -1, -4, -2,
+  -3,
+]
+
+function linePath(values: number[]) {
+  return values
+    .map((value, index) => {
+      const x = 26 + (index / (values.length - 1)) * 874
+      const y = 137.5 - value * 3.25
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`
+    })
+    .join(" ")
 }
 
-function Detail({row,onClose}:{row:Row,onClose:()=>void}) {
-  return <div className="detail">
-    <div className="detail-head"><div><span>{row.category}</span><h3>{row.group}</h3></div><button onClick={onClose} aria-label="상세 닫기"><Icon name="close"/></button></div>
-    <div className="detail-stats"><div><span>사례수</span><b>{fmt(row.n)}명</b></div><div><span>평균 기간</span><b>{row.avg}년</b></div></div>
-    <h4>기간별 비율 및 전체 대비</h4>
-    {BANDS.map((b,i)=>{const diff=row.bands[i]-overall.bands[i];return <div className="mini-row" key={b}><div><span>{b}</span><b>{row.bands[i]}%</b><em className={diff>=0?'positive':''}>{diff>0?'+':''}{diff.toFixed(1)}%p</em></div><div><i style={{width:`${row.bands[i]}%`}}/></div></div>})}
-  </div>
+function ValueCard({
+  label,
+  value,
+  tone,
+  trend,
+}: {
+  label: string
+  value: string
+  tone: "blue" | "mint"
+  trend: string
+}) {
+  return (
+    <article className={`value-card value-card--${tone}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className={`axis-dot axis-dot--${tone}`} />
+          <p className="text-sm font-semibold text-slate-600">{label}</p>
+        </div>
+        <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-slate-500">
+          DEGREE
+        </span>
+      </div>
+      <div className="mt-7 flex items-end justify-between gap-4">
+        <p className="tracking-tight text-slate-950">
+          <span className="text-5xl font-bold sm:text-[3.5rem]">{value}</span>
+          <span className="ml-1 text-2xl font-semibold text-slate-500">°</span>
+        </p>
+        <span className="mb-2 rounded-lg bg-white/80 px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+          {trend}
+        </span>
+      </div>
+    </article>
+  )
 }
 
 export default function App() {
-  const [category,setCategory]=useState('연령별')
-  const [metric,setMetric]=useState('avg')
-  const [rankCat,setRankCat]=useState('전체')
-  const [query,setQuery]=useState('')
-  const [selected,setSelected]=useState<string[]>([])
-  const [detail,setDetail]=useState<Row|null>(null)
-  const searchRows=DATA.slice(1).filter(r=>(r.group+r.category).includes(query))
-  const categoryRows=DATA.filter(r=>r.category===category)
-  const lineRows=selected.length?DATA.filter(r=>selected.includes(r.group)):categoryRows
-  const longest=DATA.slice(1).reduce((a,b)=>a.avg>b.avg?a:b), shortest=DATA.slice(1).reduce((a,b)=>a.avg<b.avg?a:b)
-  const toggle=(g:string)=>setSelected(s=>s.includes(g)?s.filter(x=>x!==g):[...s,g])
-  return <main>
-    <header><div className="eyebrow"><Icon name="book"/> 2025 독서 지표</div><h1>성인의 비독서 지속 기간</h1><p>책을 읽지 않은 기간을 집단별로 비교하고, 우리 사회의 독서 공백을 살펴봅니다.</p></header>
-    <section className="summary">
-      <article><span className="card-icon"><Icon name="book"/></span><div><small>전체 평균 비독서 기간</small><b>12<em>년</em></b><p>성인 전체 기준</p></div></article>
-      <article><span className="card-icon"><Icon name="users"/></span><div><small>전체 사례수</small><b>{fmt(overall.n)}<em>명</em></b><p>2025년 조사 응답자</p></div></article>
-      <article><span className="card-icon peach"><Icon name="up"/></span><div><small>평균이 가장 긴 집단</small><b className="group-value">{longest.group}</b><p>{longest.avg}년 · {longest.category}</p></div></article>
-      <article><span className="card-icon pale"><Icon name="down"/></span><div><small>평균이 가장 짧은 집단</small><b className="group-value">{shortest.group}</b><p>{shortest.avg}년 · {shortest.category}</p></div></article>
-    </section>
+  const [range, setRange] = useState("1분")
 
-    <section className="workspace">
-      <div className="search-box">
-        <Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="집단 검색 (예: 30대, 여성, 소득)" aria-label="집단 검색"/>
-        {query&&<button onClick={()=>setQuery('')} aria-label="검색어 지우기"><Icon name="close"/></button>}
-      </div>
-      {query&&<div className="results"><div className="results-head"><b>검색 결과 {searchRows.length}개</b><span>체크하면 그래프에서 비교할 수 있어요</span></div>
-        {searchRows.map(r=><div className="result" key={r.group}><label><input type="checkbox" checked={selected.includes(r.group)} onChange={()=>toggle(r.group)}/><span/></label><button onClick={()=>setDetail(r)}><b>{r.group}</b><small>{r.category} · {fmt(r.n)}명</small><em>{r.avg}년</em></button></div>)}
-      </div>}
-      {selected.length>0&&<div className="selection"><b>선택 비교</b>{selected.map(g=><button key={g} onClick={()=>toggle(g)}>{g} <Icon name="close"/></button>)}<button className="clear" onClick={()=>setSelected([])}>전체 해제</button></div>}
-    </section>
+  return (
+    <div className="min-h-screen bg-[#f4f6f8] text-slate-950">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[228px] flex-col bg-[#111b2e] px-5 py-7 text-white lg:flex">
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4f7cff] shadow-lg shadow-blue-950/30">
+            <span className="h-3.5 w-3.5 rounded-full border-[3px] border-white" />
+          </div>
+          <div>
+            <p className="text-[15px] font-bold tracking-tight">IMU Monitor</p>
+            <p className="mt-0.5 text-[10px] font-medium tracking-[0.16em] text-slate-400">
+              MPU-6050
+            </p>
+          </div>
+        </div>
 
-    <section className="panel">
-      <div className="panel-head"><div><span className="section-no">01</span><h2>비독서 기간 분포</h2><p>{selected.length?'선택한 집단을 겹쳐 비교합니다.':'분류별 집단의 실제 비율을 비교합니다.'}</p></div></div>
-      {!selected.length&&<nav className="tabs">{categories.map(c=><button className={c===category?'active':''} onClick={()=>setCategory(c)} key={c}>{c}</button>)}</nav>}
-      <LineChart rows={[overall,...lineRows]}/>
-    </section>
+        <nav className="mt-12 space-y-2" aria-label="주 메뉴">
+          {[
+            ["dashboard", "대시보드"],
+            ["chart", "데이터 분석"],
+            ["sensor", "센서 상태"],
+          ].map(([icon, label], index) => (
+            <button
+              key={label}
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${
+                index === 0
+                  ? "bg-[#263654] text-white"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <Icon name={icon as IconName} />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-    <section className="panel">
-      <div className="panel-head split"><div><span className="section-no">02</span><h2>집단 순위</h2><p>선택 지표가 높은 순서로 보여줍니다.</p></div><div className="controls">
-        <label>지표<select value={metric} onChange={e=>setMetric(e.target.value)}><option value="avg">평균 비독서 기간 (년)</option>{BANDS.map(b=><option key={b}>{b}</option>)}</select></label>
-        <label>분류<select value={rankCat} onChange={e=>setRankCat(e.target.value)}><option value="전체">전체 분류 보기</option>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
-      </div></div>
-      <Ranking metric={metric} category={rankCat}/>
-    </section>
+        <div className="mt-auto">
+          <div className="mb-5 rounded-2xl border border-white/8 bg-white/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">
+                디바이스
+              </span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]" />
+            </div>
+            <p className="text-sm font-semibold">Arduino Uno</p>
+            <p className="mt-1 text-xs text-slate-500">COM3 · 115200 baud</p>
+          </div>
+          <button
+            className="flex w-full items-center gap-3 px-3.5 py-2 text-sm font-medium text-slate-400 hover:text-white"
+            type="button"
+          >
+            <Icon name="settings" />
+            설정
+          </button>
+        </div>
+      </aside>
 
-    <section className="panel">
-      <div className="panel-head"><div><span className="section-no">03</span><h2>분류 내 상대 분포</h2><p>같은 분류 안에서 상대적으로 어느 집단이 높은지만 보여주며, 실제 비율 크기는 01 그래프를 참고하세요.</p></div></div>
-      <nav className="tabs">{categories.map(c=><button className={c===category?'active':''} onClick={()=>setCategory(c)} key={c}>{c}</button>)}</nav>
-      <LineChart rows={categoryRows} normalized/>
-    </section>
-    <footer><Icon name="book"/><span>자료: 통계청 KOSIS, 성인의 비독서 지속 기간(2025)</span></footer>
-    {detail&&<><button className="backdrop" onClick={()=>setDetail(null)} aria-label="상세 닫기"/><aside><Detail row={detail} onClose={()=>setDetail(null)}/></aside></>}
-  </main>
+      <main className="min-h-screen lg:ml-[228px]">
+        <header className="flex h-[74px] items-center justify-between border-b border-slate-200/80 bg-white px-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#111b2e] lg:hidden">
+              <span className="h-3 w-3 rounded-full border-[3px] border-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight sm:text-lg">
+                기울기 센서 대시보드
+              </h1>
+              <p className="hidden text-xs text-slate-400 sm:block">
+                실시간 자세 및 움직임 모니터링
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-xs font-bold text-emerald-700">연결됨</span>
+          </div>
+        </header>
+
+        <div className="mx-auto max-w-[1320px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+          <section className="mb-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <p className="mb-1.5 text-xs font-bold tracking-[0.14em] text-[#4f7cff]">
+                LIVE ORIENTATION
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight sm:text-[28px]">
+                현재 센서값
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span>마지막 업데이트</span>
+              <span className="font-semibold text-slate-600">
+                오늘 14:32:08
+              </span>
+            </div>
+          </section>
+
+          <section className="grid gap-5 sm:grid-cols-2">
+            <ValueCard
+              label="피치 (Pitch)"
+              value="+12.4"
+              tone="blue"
+              trend="↗ 0.8°"
+            />
+            <ValueCard
+              label="롤 (Roll)"
+              value="-3.7"
+              tone="mint"
+              trend="↘ 0.3°"
+            />
+          </section>
+
+          <section className="mt-6 overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div>
+                <h3 className="text-base font-bold">시간에 따른 기울기 변화</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Pitch / Roll 각도 변화 추이
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 pr-1 text-xs font-semibold text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <i className="h-2 w-2 rounded-full bg-[#527cff]" />
+                    Pitch
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <i className="h-2 w-2 rounded-full bg-[#24bba7]" />
+                    Roll
+                  </span>
+                </div>
+                <div className="flex rounded-lg bg-slate-100 p-1">
+                  {["1분", "5분", "1시간"].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setRange(item)}
+                      className={`rounded-md px-2.5 py-1.5 text-[11px] font-bold transition ${
+                        range === item
+                          ? "bg-white text-slate-800 shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4 pb-3 pt-6 sm:px-7">
+              <div className="chart-wrap">
+                <div className="chart-y-labels" aria-hidden="true">
+                  <span>30°</span>
+                  <span>15°</span>
+                  <span>0°</span>
+                  <span>-15°</span>
+                  <span>-30°</span>
+                </div>
+                <svg
+                  className="h-[270px] w-full min-w-[620px]"
+                  viewBox="0 0 926 275"
+                  role="img"
+                  aria-label="피치와 롤 각도의 예시 선 그래프"
+                >
+                  <defs>
+                    <linearGradient id="pitchFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#527cff" stopOpacity=".18" />
+                      <stop offset="100%" stopColor="#527cff" stopOpacity="0" />
+                    </linearGradient>
+                    <filter
+                      id="lineGlow"
+                      x="-10%"
+                      y="-30%"
+                      width="120%"
+                      height="160%"
+                    >
+                      <feGaussianBlur stdDeviation="2.5" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  {[40, 88.75, 137.5, 186.25, 235].map((y) => (
+                    <line
+                      key={y}
+                      x1="26"
+                      x2="900"
+                      y1={y}
+                      y2={y}
+                      stroke="#e8edf3"
+                      strokeWidth="1"
+                      strokeDasharray="4 5"
+                    />
+                  ))}
+                  <line
+                    x1="26"
+                    x2="900"
+                    y1="137.5"
+                    y2="137.5"
+                    stroke="#d2dae5"
+                  />
+                  <path
+                    d={`${linePath(pitchData)} L 900 235 L 26 235 Z`}
+                    fill="url(#pitchFill)"
+                  />
+                  <path
+                    d={linePath(pitchData)}
+                    fill="none"
+                    stroke="#527cff"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#lineGlow)"
+                  />
+                  <path
+                    d={linePath(rollData)}
+                    fill="none"
+                    stroke="#24bba7"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle
+                    cx="900"
+                    cy={137.5 - pitchData.at(-1)! * 3.25}
+                    r="4.5"
+                    fill="white"
+                    stroke="#527cff"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="900"
+                    cy={137.5 - rollData.at(-1)! * 3.25}
+                    r="4.5"
+                    fill="white"
+                    stroke="#24bba7"
+                    strokeWidth="3"
+                  />
+                  <g fill="#94a3b8" fontSize="10.5" fontWeight="600">
+                    <text x="26" y="263" textAnchor="middle">
+                      14:31:10
+                    </text>
+                    <text x="245" y="263" textAnchor="middle">
+                      14:31:25
+                    </text>
+                    <text x="463" y="263" textAnchor="middle">
+                      14:31:40
+                    </text>
+                    <text x="682" y="263" textAnchor="middle">
+                      14:31:55
+                    </text>
+                    <text x="900" y="263" textAnchor="middle">
+                      14:32:10
+                    </text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </section>
+
+          <footer className="mt-5 flex flex-col gap-2 px-1 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              샘플 데이터로 표시 중입니다. Arduino 연결 후 실시간 값으로
+              대체됩니다.
+            </p>
+            <p>
+              샘플링 주기{" "}
+              <strong className="font-semibold text-slate-500">100 ms</strong>
+            </p>
+          </footer>
+        </div>
+      </main>
+    </div>
+  )
 }
