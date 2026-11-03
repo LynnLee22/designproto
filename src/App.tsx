@@ -1,6 +1,21 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createClient } from "@supabase/supabase-js"
 
 type IconName = "dashboard" | "chart" | "sensor" | "settings"
+type SensorSample = { id: string | number | null; angle: number; receivedAt: Date }
+type ReadingRow = Record<string, unknown> & {
+  id?: string | number
+  value: number | string
+  created_at?: string
+}
+
+const TABLE_NAME = "Reading"
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null
 
 function Icon({
   name,
@@ -55,23 +70,19 @@ function Icon({
   )
 }
 
-const pitchData = [
-  5, 7, 4, 9, 12, 10, 15, 14, 18, 16, 21, 19, 24, 22, 18, 20, 17, 15, 19, 16,
-  13, 14, 12, 10,
-]
-const rollData = [
-  -5, -2, -4, 1, -1, 3, 0, 4, 2, 5, 3, 7, 4, 6, 2, 0, 3, -2, 1, -3, -1, -4, -2,
-  -3,
-]
-
-function linePath(values: number[]) {
-  return values
-    .map((value, index) => {
-      const x = 26 + (index / (values.length - 1)) * 874
-      const y = 137.5 - value * 3.25
+function linePath(samples: SensorSample[]) {
+  return samples
+    .map((sample, index) => {
+      const x =
+        samples.length === 1 ? 900 : 26 + (index / (samples.length - 1)) * 874
+      const y = 137.5 - sample.angle * 3.25
       return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`
     })
     .join(" ")
+}
+
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : "알 수 없는 오류"
 }
 
 function ValueCard({
@@ -110,7 +121,138 @@ function ValueCard({
 }
 
 export default function App() {
-  const [range, setRange] = useState("1분")
+  const [samples, setSamples] = useState<SensorSample[]>([])
+  const [isConnected, setIsConnected] = useState(false)
+  const [connectionMessage, setConnectionMessage] = useState("Supabase 연결을 확인하는 중")
+
+  useEffect(() => {
+    if (!supabase) {
+      setConnectionMessage(".env의 Supabase URL 또는 anon key가 없습니다")
+      return
+    }
+
+    let active = true
+    let initialLoaded = false
+    let pendingRows: ReadingRow[] = []
+
+    const toSample = (row: ReadingRow, fallbackTime: number): SensorSample | null => {
+      const angle = Number(row.value)
+      if (row.value === null || row.value === undefined || !Number.isFinite(angle)) {
+        return null
+      }
+
+      const parsedTime = row.created_at ? new Date(row.created_at) : null
+      return {
+        id: row.id ?? row.created_at ?? null,
+        angle,
+        receivedAt:
+          parsedTime && Number.isFinite(parsedTime.getTime())
+            ? parsedTime
+            : new Date(fallbackTime),
+      }
+    }
+
+    const appendRows = (rows: ReadingRow[]) => {
+      const now = Date.now()
+      const additions = rows
+        .map((row, index) => toSample(row, now + index))
+        .filter((sample): sample is SensorSample => sample !== null)
+      if (!active || additions.length === 0) return
+
+      setSamples((current) => {
+        const keys = new Set(
+          current.map((sample) =>
+            sample.id === null
+              ? `${sample.receivedAt.getTime()}:${sample.angle}`
+              : String(sample.id),
+          ),
+        )
+        const unique = additions.filter((sample) => {
+          const key =
+            sample.id === null
+              ? `${sample.receivedAt.getTime()}:${sample.angle}`
+              : String(sample.id)
+          if (keys.has(key)) return false
+          keys.add(key)
+          return true
+        })
+        return [...current, ...unique].slice(-100)
+      })
+    }
+
+    const channel = supabase
+      .channel("reading-dashboard-live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: TABLE_NAME },
+        (payload) => {
+          const row = payload.new as ReadingRow
+          if (!initialLoaded) pendingRows.push(row)
+          else appendRows([row])
+        },
+      )
+      .subscribe((status) => {
+        if (!active) return
+        if (status === "SUBSCRIBED") {
+          setIsConnected(true)
+          setConnectionMessage("Supabase Realtime 연결됨")
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setIsConnected(false)
+          setConnectionMessage("Realtime 구독 실패 · Supabase 설정을 확인하세요")
+        } else if (status === "CLOSED") {
+          setIsConnected(false)
+        }
+      })
+
+    const loadLatest = async () => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(100)
+      if (error) throw error
+
+      const rows = [...(data ?? [])].reverse() as ReadingRow[]
+      const now = Date.now()
+      const history = rows
+        .map((row, index) =>
+          toSample(row, now - (rows.length - index - 1) * 1000),
+        )
+        .filter((sample): sample is SensorSample => sample !== null)
+
+      if (!active) return
+      setSamples(history.slice(-100))
+      initialLoaded = true
+      appendRows(pendingRows)
+      pendingRows = []
+    }
+
+    void loadLatest().catch((error: unknown) => {
+      if (active) setConnectionMessage(`Supabase 조회 실패: ${errorText(error)}`)
+    })
+
+    return () => {
+      active = false
+      void supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const latest = samples.at(-1)
+  const previous = samples.at(-2)
+  const formatAngle = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed(1)}`
+  const formatDelta = (current: number | undefined, before: number | undefined) =>
+    current === undefined || before === undefined
+      ? "Δ --"
+      : `Δ ${current - before >= 0 ? "+" : ""}${(current - before).toFixed(1)}°`
+  const timestampLabel = (sample: SensorSample) =>
+    sample.receivedAt.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    })
+  const timeTicks = ["가장 오래된 값", "75개 전", "50개 전", "25개 전", "최신"]
+  const anglePath = samples.length ? linePath(samples) : ""
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] text-slate-950">
@@ -154,10 +296,10 @@ export default function App() {
               <span className="text-xs font-medium text-slate-400">
                 디바이스
               </span>
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]" />
+              <span className={`h-2 w-2 rounded-full ${isConnected ? "bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]" : "bg-slate-500"}`} />
             </div>
-            <p className="text-sm font-semibold">Arduino Uno</p>
-            <p className="mt-1 text-xs text-slate-500">COM3 · 115200 baud</p>
+            <p className="text-sm font-semibold">Supabase Reading</p>
+            <p className="mt-1 text-xs text-slate-500">Realtime INSERT</p>
           </div>
           <button
             className="flex w-full items-center gap-3 px-3.5 py-2 text-sm font-medium text-slate-400 hover:text-white"
@@ -180,16 +322,15 @@ export default function App() {
                 기울기 센서 대시보드
               </h1>
               <p className="hidden text-xs text-slate-400 sm:block">
-                실시간 자세 및 움직임 모니터링
+                Supabase 최신 센서 데이터 모니터링
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 ${isConnected ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+            <span className={`h-2 w-2 rounded-full ${isConnected ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} />
+            <span className={`text-xs font-bold ${isConnected ? "text-emerald-700" : "text-slate-500"}`}>
+              {isConnected ? "Realtime 연결됨" : "Realtime 연결 중"}
             </span>
-            <span className="text-xs font-bold text-emerald-700">연결됨</span>
           </div>
         </header>
 
@@ -206,61 +347,38 @@ export default function App() {
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span>마지막 업데이트</span>
               <span className="font-semibold text-slate-600">
-                오늘 14:32:08
+                {latest ? timestampLabel(latest) : "--:--:--"}
               </span>
             </div>
           </section>
 
-          <section className="grid gap-5 sm:grid-cols-2">
-            <ValueCard
-              label="피치 (Pitch)"
-              value="+12.4"
-              tone="blue"
-              trend="↗ 0.8°"
-            />
-            <ValueCard
-              label="롤 (Roll)"
-              value="-3.7"
-              tone="mint"
-              trend="↘ 0.3°"
-            />
+          <section className="grid gap-5">
+            <div className="sm:max-w-[640px]">
+              <ValueCard
+                label="기울기"
+                value={latest ? formatAngle(latest.angle) : "--.-"}
+                tone="blue"
+                trend={formatDelta(latest?.angle, previous?.angle)}
+              />
+            </div>
           </section>
 
           <section className="mt-6 overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.04)]">
             <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
               <div>
-                <h3 className="text-base font-bold">시간에 따른 기울기 변화</h3>
+                <h3 className="text-base font-bold">최근 센서값</h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  Pitch / Roll 각도 변화 추이
+                  Supabase 최신 100개 · 새 행이 들어오면 즉시 갱신
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-4 pr-1 text-xs font-semibold text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <i className="h-2 w-2 rounded-full bg-[#527cff]" />
-                    Pitch
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <i className="h-2 w-2 rounded-full bg-[#24bba7]" />
-                    Roll
-                  </span>
+                <div className="flex items-center gap-2 pr-1 text-xs font-semibold text-slate-500">
+                  <i className="h-2 w-2 rounded-full bg-[#527cff]" />
+                  기울기
                 </div>
-                <div className="flex rounded-lg bg-slate-100 p-1">
-                  {["1분", "5분", "1시간"].map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setRange(item)}
-                      className={`rounded-md px-2.5 py-1.5 text-[11px] font-bold transition ${
-                        range === item
-                          ? "bg-white text-slate-800 shadow-sm"
-                          : "text-slate-400 hover:text-slate-600"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
+                <span className="rounded-lg bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-500">
+                  {samples.length} / 100개
+                </span>
               </div>
             </div>
 
@@ -277,10 +395,10 @@ export default function App() {
                   className="h-[270px] w-full min-w-[620px]"
                   viewBox="0 0 926 275"
                   role="img"
-                  aria-label="피치와 롤 각도의 예시 선 그래프"
+                  aria-label="Supabase 최신 100개 기울기 그래프"
                 >
                   <defs>
-                    <linearGradient id="pitchFill" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="angleFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#527cff" stopOpacity=".18" />
                       <stop offset="100%" stopColor="#527cff" stopOpacity="0" />
                     </linearGradient>
@@ -317,59 +435,41 @@ export default function App() {
                     y2="137.5"
                     stroke="#d2dae5"
                   />
-                  <path
-                    d={`${linePath(pitchData)} L 900 235 L 26 235 Z`}
-                    fill="url(#pitchFill)"
-                  />
-                  <path
-                    d={linePath(pitchData)}
-                    fill="none"
-                    stroke="#527cff"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#lineGlow)"
-                  />
-                  <path
-                    d={linePath(rollData)}
-                    fill="none"
-                    stroke="#24bba7"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="900"
-                    cy={137.5 - pitchData.at(-1)! * 3.25}
-                    r="4.5"
-                    fill="white"
-                    stroke="#527cff"
-                    strokeWidth="3"
-                  />
-                  <circle
-                    cx="900"
-                    cy={137.5 - rollData.at(-1)! * 3.25}
-                    r="4.5"
-                    fill="white"
-                    stroke="#24bba7"
-                    strokeWidth="3"
-                  />
+                  {samples.length > 0 ? (
+                    <>
+                      <path
+                        d={`${anglePath} L 900 235 L 26 235 Z`}
+                        fill="url(#angleFill)"
+                      />
+                      <path
+                        d={anglePath}
+                        fill="none"
+                        stroke="#527cff"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        filter="url(#lineGlow)"
+                      />
+                      <circle
+                        cx="900"
+                        cy={137.5 - latest!.angle * 3.25}
+                        r="4.5"
+                        fill="white"
+                        stroke="#527cff"
+                        strokeWidth="3"
+                      />
+                    </>
+                  ) : (
+                    <text x="463" y="142" textAnchor="middle" fill="#94a3b8" fontSize="13">
+                      저장된 센서값이 없습니다
+                    </text>
+                  )}
                   <g fill="#94a3b8" fontSize="10.5" fontWeight="600">
-                    <text x="26" y="263" textAnchor="middle">
-                      14:31:10
-                    </text>
-                    <text x="245" y="263" textAnchor="middle">
-                      14:31:25
-                    </text>
-                    <text x="463" y="263" textAnchor="middle">
-                      14:31:40
-                    </text>
-                    <text x="682" y="263" textAnchor="middle">
-                      14:31:55
-                    </text>
-                    <text x="900" y="263" textAnchor="middle">
-                      14:32:10
-                    </text>
+                    {timeTicks.map((sample, index) => (
+                      <text key={index} x={26 + index * 218.5} y="263" textAnchor="middle">
+                        {sample}
+                      </text>
+                    ))}
                   </g>
                 </svg>
               </div>
@@ -377,13 +477,12 @@ export default function App() {
           </section>
 
           <footer className="mt-5 flex flex-col gap-2 px-1 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              샘플 데이터로 표시 중입니다. Arduino 연결 후 실시간 값으로
-              대체됩니다.
+            <p role="status" aria-live="polite">
+              {connectionMessage}
             </p>
             <p>
-              샘플링 주기{" "}
-              <strong className="font-semibold text-slate-500">100 ms</strong>
+              메모리 버퍼{" "}
+              <strong className="font-semibold text-slate-500">최근 {samples.length} / 100개</strong>
             </p>
           </footer>
         </div>
