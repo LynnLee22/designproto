@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js"
-import { DEVICE_ID, MAX_POINTS } from "../product"
+import { MAX_POINTS } from "../product"
 import { db, IS_DEMO_MODE } from "./supabase"
 
 export type Reading = {
@@ -15,33 +15,6 @@ type ConnectOptions = {
 }
 
 let channel: RealtimeChannel | null = null
-let demoTimer: ReturnType<typeof setInterval> | null = null
-let demoPower = false
-
-function createDemoReading(step: number, time = new Date()): Reading {
-  const phase = step % 24
-  let angle = 0
-
-  if (phase >= 4 && phase <= 11) {
-    const progress = (phase - 3) / 9
-    const eased = progress * progress * (3 - 2 * progress)
-    angle = 46 * eased
-  } else if (phase >= 12 && phase <= 15) {
-    angle = 46
-  } else if (phase >= 16) {
-    const progress = (phase - 15) / 9
-    const eased = progress * progress * (3 - 2 * progress)
-    angle = 46 * (1 - eased)
-  }
-
-  const wobble = [0, 1, 0, -1][step % 4]
-  const value = Math.min(46, Math.max(0, Math.round(angle + wobble)))
-
-  return {
-    value,
-    created_at: time.toISOString(),
-  }
-}
 
 export async function connectSensor({
   onInit,
@@ -52,23 +25,12 @@ export async function connectSensor({
   onStatus("connecting")
 
   if (IS_DEMO_MODE || !db) {
-    const now = Date.now()
-    let step = 24
-    onInit(
-      Array.from({ length: 24 }, (_, index) =>
-        createDemoReading(index, new Date(now - (23 - index) * 500)),
-      ),
-    )
-    onStatus("connected")
-    demoTimer = setInterval(() => {
-      onReading(createDemoReading(step))
-      step += 1
-    }, 500)
+    onStatus("error")
     return
   }
 
   const { data, error } = await db
-    .from("sensor_readings")
+    .from("Reading")
     .select("value, created_at")
     .eq("device_id", DEVICE_ID)
     .order("created_at", { ascending: false })
@@ -88,8 +50,7 @@ export async function connectSensor({
       {
         event: "INSERT",
         schema: "public",
-        table: "sensor_readings",
-        filter: `device_id=eq.${DEVICE_ID}`,
+        table: "Reading",
       },
       (payload) => onReading(payload.new as Reading),
     )
@@ -105,11 +66,6 @@ export async function connectSensor({
 }
 
 export async function disconnectSensor(): Promise<void> {
-  if (demoTimer) {
-    clearInterval(demoTimer)
-    demoTimer = null
-  }
-
   if (channel && db) {
     await db.removeChannel(channel)
     channel = null
@@ -117,10 +73,7 @@ export async function disconnectSensor(): Promise<void> {
 }
 
 export async function setLedPower(on: boolean): Promise<boolean> {
-  if (IS_DEMO_MODE || !db) {
-    demoPower = on
-    return true
-  }
+  if (IS_DEMO_MODE || !db) return false
 
   const { error } = await db
     .from("device_state")
@@ -131,7 +84,7 @@ export async function setLedPower(on: boolean): Promise<boolean> {
 }
 
 export async function loadPower(): Promise<boolean> {
-  if (IS_DEMO_MODE || !db) return demoPower
+  if (IS_DEMO_MODE || !db) return false
 
   const { data, error } = await db
     .from("device_state")

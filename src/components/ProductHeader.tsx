@@ -33,7 +33,9 @@ export default function ProductHeader() {
         {PRODUCT.description || slots.description}
       </p>
       {IS_DEMO_MODE && (
-        <p className="t-caption demo-note">데모 데이터로 표시 중</p>
+        <p className="t-caption demo-note">
+          Supabase 설정이 없어 실시간 센서값을 받을 수 없습니다
+        </p>
       )}
     </header>
   )
