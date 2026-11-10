@@ -122,6 +122,16 @@ button { border: 0; border-radius: 0; }
   margin-top: var(--space-6);
 }
 
+.sensor-unit {
+  margin-left: var(--space-1);
+  color: var(--ink-muted);
+}
+
+.brightness-status {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-muted);
+}
+
 .lower-grid {
   display: grid;
   gap: var(--space-8);
@@ -252,6 +262,43 @@ button { border: 0; border-radius: 0; }
   color: var(--danger);
 }
 
+.sensor-chart-layout {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.tilt-gauge {
+  display: flex;
+  min-width: 0;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+}
+
+.tilt-gauge svg {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: 200px;
+}
+
+.gauge-tick {
+  stroke: var(--line);
+  stroke-width: 1px;
+}
+
+.gauge-active-arc {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2px;
+}
+
+.gauge-bar {
+  fill: var(--ink);
+  transform-box: view-box;
+  transition: transform 300ms;
+}
+
 .chart-container {
   width: 100%;
   min-width: 0;
@@ -279,12 +326,22 @@ button { border: 0; border-radius: 0; }
   stroke-width: 1px;
 }
 
+.chart-reference-line {
+  stroke: var(--line);
+  stroke-dasharray: 4 4;
+  stroke-width: 1px;
+}
+
 .chart-line {
   fill: none;
   stroke: var(--brand);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2px;
+}
+
+.chart-last-point {
+  fill: var(--brand);
 }
 
 .chart-label {
@@ -307,5 +364,16 @@ button { border: 0; border-radius: 0; }
     grid-template-columns: 1fr 2fr;
     gap: var(--space-12);
     margin-top: var(--space-12);
+  }
+
+  .sensor-chart-layout {
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-bar {
+    transition: none;
   }
 }

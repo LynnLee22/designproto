@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js"
-import { DEVICE_ID, MAX_POINTS, SENSOR_MAX, SENSOR_MIN } from "../product"
+import { DEVICE_ID, MAX_POINTS } from "../product"
 import { db, IS_DEMO_MODE } from "./supabase"
 
 export type Reading = {
@@ -19,11 +19,26 @@ let demoTimer: ReturnType<typeof setInterval> | null = null
 let demoPower = false
 
 function createDemoReading(step: number, time = new Date()): Reading {
-  const midpoint = (SENSOR_MAX + SENSOR_MIN) / 2
-  const amplitude = (SENSOR_MAX - SENSOR_MIN) * 0.42
+  const phase = step % 24
+  let angle = 0
+
+  if (phase >= 4 && phase <= 11) {
+    const progress = (phase - 3) / 9
+    const eased = progress * progress * (3 - 2 * progress)
+    angle = 46 * eased
+  } else if (phase >= 12 && phase <= 15) {
+    angle = 46
+  } else if (phase >= 16) {
+    const progress = (phase - 15) / 9
+    const eased = progress * progress * (3 - 2 * progress)
+    angle = 46 * (1 - eased)
+  }
+
+  const wobble = [0, 1, 0, -1][step % 4]
+  const value = Math.min(46, Math.max(0, Math.round(angle + wobble)))
 
   return {
-    value: Math.round(midpoint + Math.sin(step / 4) * amplitude),
+    value,
     created_at: time.toISOString(),
   }
 }

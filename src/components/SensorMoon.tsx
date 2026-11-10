@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { SENSOR_MAX, SENSOR_MIN } from "../product"
+import { DEAD_DEG, getLightLevel } from "../product"
 
 type Props = {
   value?: number
@@ -7,15 +7,13 @@ type Props = {
 }
 
 export default function SensorMoon({ value, power }: Props) {
-  const level =
-    value === undefined
-      ? 0
-      : Math.min(
-          1,
-          Math.max(0, (value - SENSOR_MIN) / (SENSOR_MAX - SENSOR_MIN)),
-        )
+  const level = value === undefined ? 0 : getLightLevel(value)
   const percent = Math.round(level * 100)
   const label = power ? `달 밝기 ${percent}%` : "달 꺼짐"
+  const brightnessText =
+    value === undefined || value <= DEAD_DEG
+      ? "LED 꺼짐"
+      : `LED 밝기 ${percent}%`
 
   return (
     <section className="moon-section" aria-label="달 상태">
@@ -28,9 +26,15 @@ export default function SensorMoon({ value, power }: Props) {
       >
         <img src="/images/moon.webp" alt="" />
       </div>
-      <p className="t-value sensor-value">
-        {value === undefined ? "—" : value.toLocaleString("ko-KR")}
+      <p className="sensor-value">
+        <span className="t-value">
+          {value === undefined
+            ? "—"
+            : Math.round(value).toLocaleString("ko-KR")}
+        </span>
+        {value !== undefined && <span className="t-label sensor-unit">°</span>}
       </p>
+      <p className="t-caption brightness-status">{brightnessText}</p>
     </section>
   )
 }
