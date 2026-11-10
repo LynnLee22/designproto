@@ -25,20 +25,26 @@
 
 ## 제품 슬롯 (학생이 채우는 칸)
 
-제품 이름, 컨셉, 설명은 `src/product.ts`의 `PRODUCT` 객체 한 곳에서만 정의하고 화면은 거기서 읽는다. 비어 있으면 `[제품 이름]` 같은 자리표시를 `--ink-muted`로 보여준다.
+학생은 제품 이름, 한 줄 컨셉, 제품 설명을 `src/product.ts`의 `PRODUCT` 객체에서만 바꾼다. `ProductHeader`가 이 값을 페이지 상단과 브라우저 문서 제목에 반영한다. 값을 비워 두면 해당 슬롯의 자리표시자가 `--ink-muted`로 표시된다.
 
-| 슬롯 | 위치 |
-| --- | --- |
-| 제품 이름 | `PRODUCT.name` |
-| 제품 컨셉 (한 줄) | `PRODUCT.concept` |
-| 제품 설명 (2~3문장) | `PRODUCT.description` |
-| 메인 컬러 | globals.css의 `--brand`, `--on-brand`. Tilt MONO 알루미늄 회색 |
-| 폰트 | 제품 이름은 Pretendard 700, `--font-display`(서브, IBM Plex Mono)는 센서값 숫자에만 |
+| 학생이 채우는 슬롯 | 현재 UI에 표시되는 값과 모양 | 수정 위치 |
+| --- | --- | --- |
+| 제품 이름 | Tilt MONO. 페이지 맨 위 `h1`, Pretendard 700, `--ink`. 브라우저 탭 제목에도 사용 | `PRODUCT.name` |
+| 제품 컨셉 (한 줄) | 인터스텔라 TARS에서 온, 기울이면 켜지는 조명. 이름 바로 아래 `t-label`, `--ink` | `PRODUCT.concept` |
+| 제품 설명 (2~3문장) | 기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다. 컨셉 아래 `t-body`, `--ink-muted`, 최대 폭 640px | `PRODUCT.description` |
+| 메인 컬러 | Tilt MONO 알루미늄 회색 `--brand: #c9cdd2`, 그 위 글자 `--on-brand: #000000` | `styles/globals.css`의 `:root` |
+| 폰트 | 제품 이름은 Pretendard 700, 센서 각도 숫자는 IBM Plex Mono 600 | `--font-sans`, `--font-display` in `styles/globals.css` |
 
-현재 값:
-- `name`: Tilt MONO
-- `concept`: 인터스텔라 TARS에서 온, 기울이면 켜지는 조명
-- `description`: 기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다.
+현재 제품 슬롯 값은 아래와 같다. 다른 제품으로 응용할 때는 이 세 문구를 제품에 맞게 교체하며, 센서 동작과 표시 규칙은 유지한다.
+
+```ts
+export const PRODUCT = {
+	name: "Tilt MONO",
+	concept: "인터스텔라 TARS에서 온, 기울이면 켜지는 조명",
+	description:
+		"기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다.",
+}
+```
 
 ## 기능
 
