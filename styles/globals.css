@@ -1,25 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&display=swap");
+
 /* 메인 폰트 Pretendard */
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
-/* 서브 폰트 Rising CHAI */
-@font-face { font-family: "Rising CHAI"; src: url("/fonts/RisingCHAI-Light.woff2") format("woff2"); font-weight: 300; font-display: swap; }
-@font-face { font-family: "Rising CHAI"; src: url("/fonts/RisingCHAI-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
 
 :root {
-  /* 학생 슬롯: 메인 컬러 (기본값 블루) */
-  --brand: #2f5bff;
-  --on-brand: #ffffff;
+  /* 학생 슬롯: 메인 컬러 (Tilt MONO: 알루미늄 회색) */
+  --brand: #c9cdd2;
+  --on-brand: #000000;
   /* 학생 슬롯: 폰트 (메인, 서브) */
   --font-sans: Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-display: "Rising CHAI", Pretendard, -apple-system, sans-serif;
+  --font-display: "IBM Plex Mono", Pretendard, monospace;
 
   --surface: #000000;
   --ink: #eef0f3;
   --ink-muted: #9a9ea7;
   --line: #2a2d33;
   --off: #5d6169;
-  --moon-glow: #9db8ff;
+  --moon-glow: #ffe9c4;
   --status-on: #4cc38a;
   --danger: #f97066;
 
@@ -33,8 +32,8 @@ body { margin: 0; background: var(--surface); color: var(--ink); font-family: va
 button { border: 0; border-radius: 0; }
 
 /* 타입: 자간, 행간 지정 없음 */
-.t-display { font-family: var(--font-display); font-size: 40px; font-weight: 800; }
-.t-value   { font-family: var(--font-display); font-size: 48px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.t-display { font-family: var(--font-display); font-size: 40px; font-weight: 600; }
+.t-value   { font-family: var(--font-display); font-size: 48px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .t-body    { font-size: 16px; font-weight: 400; }
 .t-label   { font-size: 14px; font-weight: 500; }
 .t-caption { font-size: 12px; font-weight: 400; }
@@ -85,8 +84,7 @@ button { border: 0; border-radius: 0; }
 .product-header h1,
 .control-row p,
 .sensor-value,
-.chart-empty,
-.power-error {
+.chart-empty {
   margin: 0;
 }
 
@@ -172,7 +170,6 @@ button { border: 0; border-radius: 0; }
   width: var(--space-2);
   height: var(--space-2);
   flex: 0 0 auto;
-  border-radius: 50%;
   background: var(--off);
 }
 
@@ -219,47 +216,12 @@ button { border: 0; border-radius: 0; }
   color: var(--surface);
 }
 
-.power-switch {
-  position: relative;
-  width: 52px;
-  min-width: 52px;
-  height: 44px;
-  padding: 0;
-  background: transparent;
-}
-
-.power-switch::before {
-  position: absolute;
-  top: 6px;
-  left: 0;
-  width: 52px;
-  height: 32px;
-  background: var(--off);
-  content: '';
-}
-
-.power-switch[aria-checked='true']::before {
-  background: var(--brand);
-}
-
-.switch-handle {
-  position: absolute;
-  top: 10px;
-  left: var(--space-1);
-  width: 24px;
-  height: 24px;
-  background: var(--surface);
-  transition: transform 150ms;
-}
-
-.power-switch[aria-checked='true'] .switch-handle {
-  background: var(--on-brand);
-  transform: translateX(20px);
-}
-
-.power-error {
+.zero-hint {
+  max-height: var(--space-12);
   margin-top: var(--space-2);
-  color: var(--danger);
+  overflow: hidden;
+  color: var(--ink-muted);
+  animation: hide-zero-hint 5s steps(1, end) forwards;
 }
 
 .sensor-chart-layout {
@@ -375,5 +337,13 @@ button { border: 0; border-radius: 0; }
 @media (prefers-reduced-motion: reduce) {
   .gauge-bar {
     transition: none;
+  }
+}
+
+@keyframes hide-zero-hint {
+  to {
+    max-height: 0;
+    margin-top: 0;
+    visibility: hidden;
   }
 }

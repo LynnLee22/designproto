@@ -210,10 +210,11 @@ export default function SensorChart({ readings }: Props) {
 
               <polyline points={points} className="chart-line" />
               {latestPoint && (
-                <circle
-                  cx={Number(latestPoint[0])}
-                  cy={Number(latestPoint[1])}
-                  r="3"
+                <rect
+                  x={Number(latestPoint[0]) - 3}
+                  y={Number(latestPoint[1]) - 3}
+                  width="6"
+                  height="6"
                   className="chart-last-point"
                 />
               )}

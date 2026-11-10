@@ -22,6 +22,7 @@ const [readings, setReadings] = useState<Reading[]>([]);
 ```
 - connected 여부는 `status === 'connected'`
 - 최신값 = `readings.at(-1)?.value`
+- `power` = 최신 기울기 각도로 계산한 `level > 0`
 - `onReading`: 배열 끝에 추가, MAX_POINTS 초과 시 앞에서 제거
 - 언마운트 시 `disconnectSensor()`
 

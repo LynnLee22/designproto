@@ -32,6 +32,11 @@ export default function ConnectionControl({
           <span className="status-dot" aria-hidden="true" />
           {statusText[status]}
         </p>
+        {connected && (
+          <p className="t-caption zero-hint">
+            램프를 세운 상태에서 켜야 0°가 맞습니다
+          </p>
+        )}
       </div>
       <button
         className={`t-label action-button ${

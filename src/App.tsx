@@ -7,30 +7,27 @@ import SensorMoon from "./components/SensorMoon"
 import {
   connectSensor,
   disconnectSensor,
-  loadPower,
-  setLedPower,
   type Reading,
   type Status,
 } from "./lib/device"
-import { MAX_POINTS } from "./product"
+import { getLightLevel, MAX_POINTS } from "./product"
 
 export default function App() {
   const [status, setStatus] = useState<Status>("disconnected")
   const [power, setPower] = useState(false)
   const [readings, setReadings] = useState<Reading[]>([])
+  const latestValue = readings.at(-1)?.value
+  const level = latestValue === undefined ? 0 : getLightLevel(latestValue)
 
   useEffect(() => {
-    let active = true
-
-    void loadPower().then((initialPower) => {
-      if (active) setPower(initialPower)
-    })
-
     return () => {
-      active = false
       void disconnectSensor()
     }
   }, [])
+
+  useEffect(() => {
+    setPower(level > 0)
+  }, [level])
 
   const handleConnect = async () => {
     await connectSensor({
@@ -47,22 +44,11 @@ export default function App() {
     setStatus("disconnected")
   }
 
-  const handlePowerChange = async (nextPower: boolean) => {
-    setPower(nextPower)
-    const succeeded = await setLedPower(nextPower)
-
-    if (!succeeded) {
-      setPower(!nextPower)
-    }
-
-    return succeeded
-  }
-
   return (
     <main className="app-shell">
       <ProductHeader />
 
-      <SensorMoon value={readings.at(-1)?.value} power={power} />
+      <SensorMoon value={latestValue} power={power} />
 
       <div className="lower-grid">
         <section className="controls" aria-label="조명 제어">
@@ -71,7 +57,7 @@ export default function App() {
             onConnect={handleConnect}
             onDisconnect={handleDisconnect}
           />
-          <PowerToggle power={power} onChange={handlePowerChange} />
+          <PowerToggle power={power} level={level} />
         </section>
 
         <SensorChart readings={readings} />

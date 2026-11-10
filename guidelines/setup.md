@@ -17,10 +17,16 @@ styles/globals.css  // styles.md 내용
 
 ## product.ts
 ```ts
-export const PRODUCT = { name: '', concept: '', description: '' };
+export const PRODUCT = {
+  name: 'Tilt MONO',
+  concept: '인터스텔라 TARS에서 온, 기울이면 켜지는 모노리스 조명',
+  description: '기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다. 두 알루미늄 기둥 사이에서 조명 바가 황동 축을 따라 회전합니다.',
+};
 export const DEVICE_ID = 'lamp-01';
 export const SENSOR_MIN = 0;
-export const SENSOR_MAX = 4095; // ESP32 ADC 12bit
+export const SENSOR_MAX = 50;
+export const DEAD_DEG = 3;
+export const FULL_DEG = 45;
 export const MAX_POINTS = 60;
 ```
 
@@ -34,7 +40,7 @@ export const SUPABASE_ANON_KEY = '<anon key>';
 export const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 ```
 
-### 테이블 (변경 금지 — ESP32 코드와 공유)
+### 테이블 (변경 금지 — upload.py와 공유)
 ```sql
 create table sensor_readings (
   id bigint generated always as identity primary key,
@@ -69,5 +75,7 @@ setLedPower(on: boolean): Promise<boolean>; // device_state.led_on update, 성�
 loadPower(): Promise<boolean>;              // 앱 시작 시 device_state.led_on 읽기
 ```
 
+`setLedPower`, `loadPower`는 나중에 실제 제어를 붙일 때 사용하도록 남겨 두며 현재 화면에서는 호출하지 않는다. 화면의 `power`는 기울기 각도로 계산한 `level > 0`으로 채운다.
+
 ### Supabase를 아직 연결하지 않았을 때
-URL이 `<project>`를 포함하면 **데모 모드**: 0.5초마다 가상 센서값(사인파)을 만들어 같은 콜백으로 흘려보낸다. 제품 설명 아래에 `t-caption` `--ink-muted`로 "데모 데이터로 표시 중" 한 줄 표시.
+URL이 `<project>`를 포함하면 **데모 모드**: 0.5초마다 0°에서 46°까지 천천히 기울였다 세우는 가상 센서값을 만들어 같은 콜백으로 흘려보낸다. 제품 설명 아래에 `t-caption` `--ink-muted`로 "데모 데이터로 표시 중" 한 줄 표시.

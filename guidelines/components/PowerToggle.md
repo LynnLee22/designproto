@@ -1,12 +1,8 @@
 # PowerToggle
 
-LED 전원 스위치. 컨트롤 영역의 둘째 행 (첫 행과 space-6 간격, 구분선 없음).
+LED 상태 표시. 컨트롤 영역의 둘째 행 (첫 행과 space-6 간격, 구분선 없음).
 
-- 한 행: 왼쪽 [컨트롤 이름 "LED 전원" `t-label` + 그 아래 "켜짐" 또는 "꺼짐" `t-caption` `--ink-muted`], 오른쪽 스위치
-- 스위치: `<button role="switch" aria-checked aria-label="LED 전원">`
-  - 사각 트랙 52×32, radius 0. OFF `--off` / ON `--brand`
-  - 사각 손잡이 24×24, radius 0, 4px 안쪽. OFF `--surface` / ON `--on-brand`. ON이면 오른쪽으로 20px, 150ms
-  - 터치 영역 최소 44px
-- 누르면 즉시 UI 반영 → `setLedPower(on)` → 실패하면 이전 상태로 되돌리고 행 아래에 "전원 변경 실패, 다시 시도" `t-caption` `--danger`
-- 앱 시작 시 `loadPower()`로 초기값
-- 센서 연결 여부와 무관하게 동작
+- 한 행: 컨트롤 이름 "LED" `t-label` + 그 아래 "꺼짐" 또는 "밝기 NN%" `t-caption` `--ink-muted`
+- 버튼이나 스위치가 아닌 `role="status"` 상태 표시
+- 밝기는 기울기 각도로 계산한다. 3° 이하는 "꺼짐", 그 위는 `level × 100`을 반올림한 "밝기 NN%"
+- `setLedPower`, `loadPower`는 화면에서 호출하지 않는다. `lib/device.ts`에는 나중에 실제 제어를 붙일 때 사용하도록 남겨 둔다
