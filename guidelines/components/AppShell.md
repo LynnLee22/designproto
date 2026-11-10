@@ -24,6 +24,7 @@ const [readings, setReadings] = useState<Reading[]>([]);
 - 최신값 = `readings.at(-1)?.value`
 - `power` = 최신 기울기 각도로 계산한 `level > 0`
 - `onReading`: 배열 끝에 추가, MAX_POINTS 초과 시 앞에서 제거
+- 센서 연결 시 초기 조회 후 1초 간격으로 새 Reading ID를 확인
 - 언마운트 시 `disconnectSensor()`
 
 ## 응용

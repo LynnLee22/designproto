@@ -1,10 +1,10 @@
-# styles/globals.css 에 넣을 내용
+# styles/globals.css 디자인 기준
 
-아래 블록을 globals.css 맨 위에 그대로 넣는다. 메인 컬러, 폰트 슬롯은 여기서만 바꾼다.
+현재 화면의 스타일 기준이다. 색상과 폰트 슬롯은 `:root`에서 관리한다. 실제 CSS는 이 값을 사용하며, 센서 원은 이미지 파일 없이 CSS로 그린다.
 
 파일 위치:
 - 폰트 `public/fonts/`: Pretendard-Regular, Medium, SemiBold, Bold (.woff2). IBM Plex Mono SemiBold 파일이 없으면 Google Fonts에서 불러온다.
-- 달 이미지 `public/images/moon.webp` (800×800, 투명 배경)
+- 센서 오브제는 별도 이미지 없이 `.sensor-orb` 원형 요소로 표시한다.
 
 ```css
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&display=swap");
@@ -49,12 +49,18 @@ button { border: 0; border-radius: 0; }
 .t-caption { font-size: 12px; font-weight: 400; }
 @media (max-width: 767px) { .t-display { font-size: 24px; } }
 
-/* 센서 달 */
-.moon { --level: 0; width: min(72vw, 360px); aspect-ratio: 1; margin: 0 auto; animation: moon-float 6s ease-in-out infinite alternate; }
-.moon img { display: block; width: 100%; height: 100%; object-fit: contain;
-  filter: brightness(calc(0.25 + 0.75 * var(--level))) drop-shadow(0 0 calc(var(--level) * 48px) var(--moon-glow));
-  transition: filter .4s; }
-.moon[data-power="off"] img { filter: brightness(0.12) grayscale(1); }
-@keyframes moon-float { from { transform: translateY(0); } to { transform: translateY(-10px); } }
-@media (prefers-reduced-motion: reduce) { .moon { animation: none; } }
+/* Sensor response circle */
+.sensor-orb {
+  --level: 0;
+  width: min(72vw, 360px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background-color: rgb(255 255 255 / var(--level));
+  box-shadow: 0 0 calc(var(--level) * 48px) rgb(255 255 255 / var(--level));
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
 ```
+
+`--level`은 `clamp(value / 45, 0, 1)`이며 앱에서 인라인 CSS 변수로 전달한다. 0°에서는 투명한 원과 윤곽선만 보이고, 45° 이상에서는 흰색으로 채워지며 밝기에 비례해 glow가 커진다.
