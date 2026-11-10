@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js"
-import { MAX_POINTS } from "../product"
+import { DEVICE_ID, MAX_POINTS } from "../product"
 import { db, IS_DEMO_MODE } from "./supabase"
 
 export type Reading = {
@@ -29,19 +29,26 @@ export async function connectSensor({
     return
   }
 
-  const { data, error } = await db
-    .from("Reading")
-    .select("value, created_at")
-    .eq("device_id", DEVICE_ID)
-    .order("created_at", { ascending: false })
-    .limit(MAX_POINTS)
+  let rows: Reading[]
+  try {
+    const { data, error } = await db
+      .from("Reading")
+      .select("value, created_at")
+      .order("created_at", { ascending: false })
+      .limit(MAX_POINTS)
 
-  if (error) {
+    if (error) {
+      onStatus("error")
+      return
+    }
+
+    rows = (data ?? []) as Reading[]
+  } catch {
     onStatus("error")
     return
   }
 
-  onInit(([...(data ?? [])] as Reading[]).reverse())
+  onInit(rows.reverse())
 
   channel = db
     .channel(`sensor-readings-${DEVICE_ID}`)
