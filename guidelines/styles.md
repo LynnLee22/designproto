@@ -3,7 +3,7 @@
 아래 블록을 globals.css 맨 위에 그대로 넣는다. 메인 컬러, 폰트 슬롯은 여기서만 바꾼다.
 
 파일 위치:
-- 폰트 `public/fonts/`: Pretendard-Regular, Medium, SemiBold (.woff2). IBM Plex Mono SemiBold 파일이 없으면 Google Fonts에서 불러온다.
+- 폰트 `public/fonts/`: Pretendard-Regular, Medium, SemiBold, Bold (.woff2). IBM Plex Mono SemiBold 파일이 없으면 Google Fonts에서 불러온다.
 - 달 이미지 `public/images/moon.webp` (800×800, 투명 배경)
 
 ```css
@@ -13,6 +13,7 @@
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Pretendard"; src: url("/fonts/Pretendard-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 :root {
   /* 학생 슬롯: 메인 컬러 (Tilt MONO: 알루미늄 회색) */
@@ -41,7 +42,7 @@ body { margin: 0; background: var(--surface); color: var(--ink); font-family: va
 button { border: 0; border-radius: 0; }
 
 /* 타입: 자간, 행간 지정 없음 */
-.t-display { font-family: var(--font-display); font-size: 40px; font-weight: 600; }
+.t-display { font-family: var(--font-sans); font-size: 40px; font-weight: 700; }
 .t-value   { font-family: var(--font-display); font-size: 48px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .t-body    { font-size: 16px; font-weight: 400; }
 .t-label   { font-size: 14px; font-weight: 500; }

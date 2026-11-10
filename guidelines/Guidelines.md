@@ -33,12 +33,12 @@
 | 제품 컨셉 (한 줄) | `PRODUCT.concept` |
 | 제품 설명 (2~3문장) | `PRODUCT.description` |
 | 메인 컬러 | globals.css의 `--brand`, `--on-brand`. Tilt MONO 알루미늄 회색 |
-| 폰트 | globals.css의 `--font-sans`(메인, Pretendard), `--font-display`(서브, IBM Plex Mono). 서브는 제품 이름과 센서값 숫자에만 |
+| 폰트 | 제품 이름은 Pretendard 700, `--font-display`(서브, IBM Plex Mono)는 센서값 숫자에만 |
 
 현재 값:
 - `name`: Tilt MONO
-- `concept`: 인터스텔라 TARS에서 온, 기울이면 켜지는 모노리스 조명
-- `description`: 기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다. 두 알루미늄 기둥 사이에서 조명 바가 황동 축을 따라 회전합니다.
+- `concept`: 인터스텔라 TARS에서 온, 기울이면 켜지는 조명
+- `description`: 기울기의 변화에 따라 LED의 밝기가 변화합니다. 세워 두면 꺼지고, 45도까지 기울일수록 밝아집니다.
 
 ## 기능
 
