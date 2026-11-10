@@ -1,8 +1,8 @@
-import type { RealtimeChannel } from "@supabase/supabase-js"
 import { DEVICE_ID, MAX_POINTS } from "../product"
 import { db, IS_DEMO_MODE } from "./supabase"
 
 export type Reading = {
+  id: number
   value: number
   created_at: string
 }
@@ -14,7 +14,7 @@ type ConnectOptions = {
   onStatus: (status: Status) => void
 }
 
-let channel: RealtimeChannel | null = null
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 export async function connectSensor({
   onInit,
@@ -28,13 +28,14 @@ export async function connectSensor({
     onStatus("error")
     return
   }
+  const client = db
 
   let rows: Reading[]
   try {
-    const { data, error } = await db
+    const { data, error } = await client
       .from("Reading")
-      .select("value, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, value, created_at")
+      .order("id", { ascending: false })
       .limit(MAX_POINTS)
 
     if (error) {
@@ -49,33 +50,44 @@ export async function connectSensor({
   }
 
   onInit(rows.reverse())
+  let lastId = rows.at(-1)?.id ?? 0
+  let polling = false
+  onStatus("connected")
 
-  channel = db
-    .channel(`sensor-readings-${DEVICE_ID}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "Reading",
-      },
-      (payload) => onReading(payload.new as Reading),
-    )
-    .subscribe((subscriptionStatus) => {
-      if (subscriptionStatus === "SUBSCRIBED") onStatus("connected")
-      if (
-        subscriptionStatus === "CHANNEL_ERROR" ||
-        subscriptionStatus === "TIMED_OUT"
-      ) {
+  pollTimer = setInterval(async () => {
+    if (polling) return
+    polling = true
+
+    try {
+      const { data, error } = await client
+        .from("Reading")
+        .select("id, value, created_at")
+        .gt("id", lastId)
+        .order("id", { ascending: true })
+        .limit(MAX_POINTS)
+
+      if (error) {
         onStatus("error")
+        return
       }
-    })
+
+      for (const row of (data ?? []) as Reading[]) {
+        lastId = Math.max(lastId, row.id)
+        onReading(row)
+      }
+      onStatus("connected")
+    } catch {
+      onStatus("error")
+    } finally {
+      polling = false
+    }
+  }, 1000)
 }
 
 export async function disconnectSensor(): Promise<void> {
-  if (channel && db) {
-    await db.removeChannel(channel)
-    channel = null
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
   }
 }
 
