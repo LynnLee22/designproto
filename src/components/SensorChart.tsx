@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Reading } from "../lib/device"
-import { DEAD_DEG, FULL_DEG, getLightLevel, SENSOR_MAX } from "../product"
+import { FULL_DEG, getLightLevel, SENSOR_MAX } from "../product"
 
 type Props = {
   readings: Reading[]
@@ -33,7 +33,7 @@ function arcPath(startAngle: number, endAngle: number, radius: number) {
 function TiltGauge({ value }: { value?: number }) {
   const angle = Math.min(SENSOR_MAX, Math.max(0, value ?? 0))
   const ticks = [0, 15, 30, 45]
-  const offLabel = polarPoint(DEAD_DEG, 96)
+  const offLabel = polarPoint(0, 96)
   const fullLabel = polarPoint(FULL_DEG, 96)
 
   return (
@@ -44,7 +44,7 @@ function TiltGauge({ value }: { value?: number }) {
         aria-label={`현재 기울기 ${Math.round(angle)}도`}
       >
         <path
-          d={arcPath(DEAD_DEG, FULL_DEG, 72)}
+          d={arcPath(0, FULL_DEG, 72)}
           className="gauge-active-arc"
         />
         {ticks.map((tick) => {
@@ -183,10 +183,7 @@ export default function SensorChart({ readings }: Props) {
                 )
               })}
 
-              {[
-                { value: FULL_DEG, label: "최대 밝기" },
-                { value: DEAD_DEG, label: "꺼짐" },
-              ].map((reference) => {
+              {[{ value: FULL_DEG, label: "최대 밝기" }].map((reference) => {
                 const y = yFor(reference.value)
                 return (
                   <g key={reference.value}>

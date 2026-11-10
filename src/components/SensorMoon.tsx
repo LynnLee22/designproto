@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { DEAD_DEG, getLightLevel } from "../product"
+import { getLightLevel } from "../product"
 
 type Props = {
   value?: number
@@ -9,23 +9,20 @@ type Props = {
 export default function SensorMoon({ value, power }: Props) {
   const level = value === undefined ? 0 : getLightLevel(value)
   const percent = Math.round(level * 100)
-  const label = power ? `달 밝기 ${percent}%` : "달 꺼짐"
-  const brightnessText =
-    value === undefined || value <= DEAD_DEG
-      ? "LED 꺼짐"
-      : `LED 밝기 ${percent}%`
+  const label =
+    value === undefined
+      ? "센서값 대기 중"
+      : `기울기 ${Math.round(value)}도, 밝기 ${percent}%`
+  const brightnessText = power ? `LED 밝기 ${percent}%` : "LED 꺼짐"
 
   return (
-    <section className="moon-section" aria-label="달 상태">
+    <section className="moon-section" aria-label="센서 반응">
       <div
-        className="moon"
-        data-power={power ? "on" : "off"}
+        className="sensor-orb"
         style={{ "--level": level } as CSSProperties}
         role="img"
         aria-label={label}
-      >
-        <img src="/images/moon.webp" alt="" />
-      </div>
+      />
       <p className="sensor-value">
         <span className="t-value">
           {value === undefined

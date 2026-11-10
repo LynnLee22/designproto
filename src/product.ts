@@ -7,11 +7,9 @@ export const PRODUCT = {
 export const DEVICE_ID = "lamp-01"
 export const SENSOR_MIN = 0
 export const SENSOR_MAX = 50
-export const DEAD_DEG = 3
 export const FULL_DEG = 45
 export const MAX_POINTS = 60
 
 export function getLightLevel(value: number) {
-  const t = Math.min(1, Math.max(0, (value - DEAD_DEG) / (FULL_DEG - DEAD_DEG)))
-  return t * t
+  return Math.min(1, Math.max(0, value / FULL_DEG))
 }
